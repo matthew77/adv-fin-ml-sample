@@ -40,6 +40,8 @@ import talib
 from random import randrange
 from sklearn.feature_selection import SelectFromModel
 from sklearn.tree import DecisionTreeClassifier
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.preprocessing import LabelEncoder
 
 DATA_HOME = "E:\\tmp\\data\\interview"
 LABELS = ("Stock_1", "Stock_2", "Stock_3", "Stock_4", "Stock_5", "Stock_6", "Stock_7", 
@@ -83,6 +85,7 @@ def preprocess_data(label):
     # 处理NaN单元格
     raw_data.fillna(method='ffill', inplace=True)
     raw_data.fillna(method='bfill', inplace=True)
+    raw_data.replace([np.inf, -np.inf], -1.0)   # not sure whether it is appropriate.
     # 构建额外feature
     features_for_training = dict()
     ######################## price #######################
@@ -363,15 +366,28 @@ for label in LABELS:
     total_data = total_data.append(sample_data.copy())    
 
 #-------------- feature selection
+# use DecisionTreeClassifier
 df_feature_sel = total_data[total_data["label"] == 'Stock_1']
 X = df_feature_sel[list(features.keys())]
-X = X.replace([np.inf, -np.inf], -1.0)   # ???How to handle inf???
+X = X.replace([np.inf, -np.inf], -1.0)   # ???How to handle inf??? # !!! to be deleted
 y = df_feature_sel['TargetFeature']
 clf = DecisionTreeClassifier(class_weight='balanced')  # consider the imbalance training data
 trans = SelectFromModel(clf, threshold='0.05*mean')  #, threshold='0.1*mean'
 X_trans = trans.fit_transform(X, y)
 print("We started with {0} features but retained only {1} of them!".format(X.shape[1], X_trans.shape[1]))
-X.columns[trans.get_support()].values
+useful_featrues_1 = X.columns[trans.get_support()].values
+# use RandomForestClassifier
+feature_list = list(features.keys())
+feature_list.append('label')  # Stock_1 ... 10 is a feature.
+le = LabelEncoder()
+X = total_data.replace([np.inf, -np.inf], -1.0) # !!! to be deleted
+X["label"] = le.fit_transform(X["label"].values)
+y = total_data['TargetFeature']
+clf = RandomForestClassifier(n_estimators=100, random_state=0, class_weight='balanced')
+trans = SelectFromModel(clf, threshold='0.5*median') 
+X_trans = trans.fit_transform(X, y)
+print("We started with {0} features but retained only {1} of them!".format(X.shape[1], X_trans.shape[1]))
+useful_featrues_2 = X.columns[trans.get_support()].values
 
 
 def zscore(x, window):
