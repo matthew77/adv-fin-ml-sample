@@ -42,13 +42,14 @@ from sklearn.feature_selection import SelectFromModel
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.preprocessing import LabelEncoder
+from sklearn.model_selection import train_test_split
 
 DATA_HOME = "E:\\tmp\\data\\interview"
 LABELS = ("Stock_1", "Stock_2", "Stock_3", "Stock_4", "Stock_5", "Stock_6", "Stock_7", 
                 "Stock_8", "Stock_9", "Stock_10")
-LOOK_BACK_PERIOD = [1,3,5,8,13,21,34]
-SAMPLE_INTERVAL = 15
-ROLLING_WINDOW = 60
+LOOK_BACK_PERIOD = [1,3,5,8,13,21,34,55]  # 回看时间长度
+SAMPLE_INTERVAL = [3, 15]  # 数据采样间隔
+ROLLING_WINDOW = 60    #计算滑动平均窗口长度
 
 
 origin_data = dict()
@@ -94,15 +95,44 @@ def preprocess_data(label):
                             'PriceFeature_3','PriceFeature_4']].mean(axis=1)  # 4者平均数
     # bband ***
     bb_up, bb_mid, bb_low = talib.BBANDS(raw_data['PriceFeature_mean'], timeperiod=ROLLING_WINDOW)
-    raw_data['new_price_bb_exceed_up'] = raw_data['PriceFeature_mean'] > bb_up
-    features_for_training['new_price_bb_exceed_up'] = 'bool'
-    raw_data['new_price_bb_below_low'] = raw_data['PriceFeature_mean'] < bb_low
-    features_for_training['new_price_bb_below_low'] = 'bool'
+    raw_data['new_price_bb_from_up'] = raw_data['PriceFeature_mean']/bb_up - 1
+    features_for_training['new_price_bb_from_up'] = 'float64'
+    raw_data['new_price_bb_from_low'] = raw_data['PriceFeature_mean']/bb_low - 1
+    features_for_training['new_price_bb_from_low'] = 'float64'
+    # gap between the price_feature 1 to 4
+    raw_data['new_price_gap_1m2'] = (raw_data['PriceFeature_1']-raw_data['PriceFeature_2'])/raw_data['PriceFeature_mean']
+    raw_data['new_price_gap_1m3'] = (raw_data['PriceFeature_1']-raw_data['PriceFeature_3'])/raw_data['PriceFeature_mean']
+    raw_data['new_price_gap_1m4'] = (raw_data['PriceFeature_1']-raw_data['PriceFeature_4'])/raw_data['PriceFeature_mean']
+    raw_data['new_price_gap_2m3'] = (raw_data['PriceFeature_2']-raw_data['PriceFeature_3'])/raw_data['PriceFeature_mean']
+    raw_data['new_price_gap_2m4'] = (raw_data['PriceFeature_2']-raw_data['PriceFeature_4'])/raw_data['PriceFeature_mean']
+    raw_data['new_price_gap_3m4'] = (raw_data['PriceFeature_3']-raw_data['PriceFeature_4'])/raw_data['PriceFeature_mean']
+    # features_for_training['new_price_bb_from_low'] = 'float64'
+    # raw_data['new_price_bb_exceed_up'] = raw_data['PriceFeature_mean'] > bb_up
+    # features_for_training['new_price_bb_exceed_up'] = 'bool'
+    # raw_data['new_price_bb_below_low'] = raw_data['PriceFeature_mean'] < bb_low
+    # features_for_training['new_price_bb_below_low'] = 'bool'
     for i in LOOK_BACK_PERIOD:
-        raw_data[f'new_price_bb_exceed_up_t{i}'] = raw_data['new_price_bb_exceed_up'].shift(i)
-        features_for_training[f'new_price_bb_exceed_up_t{i}'] = 'bool'
-        raw_data[f'new_price_bb_below_low_t{i}'] = raw_data['new_price_bb_below_low'].shift(i)
-        features_for_training[f'new_price_bb_below_low_t{i}'] = 'bool'
+        raw_data[f'new_price_bb_from_up_t{i}'] = raw_data['new_price_bb_from_up'].shift(i)
+        features_for_training[f'new_price_bb_from_up_t{i}'] = 'float64'
+        raw_data[f'new_price_bb_from_low_t{i}'] = raw_data['new_price_bb_from_low'].shift(i)
+        features_for_training[f'new_price_bb_from_low_t{i}'] = 'float64'
+
+        raw_data[f'new_price_gap_1m2_t{i}'] = raw_data['new_price_gap_1m2'].shift(i)
+        features_for_training[f'new_price_gap_1m2_t{i}'] = 'float64'
+        raw_data[f'new_price_gap_1m3_t{i}'] = raw_data['new_price_gap_1m3'].shift(i)
+        features_for_training[f'new_price_gap_1m3_t{i}'] = 'float64'
+        raw_data[f'new_price_gap_1m4_t{i}'] = raw_data['new_price_gap_1m4'].shift(i)
+        features_for_training[f'new_price_gap_1m4_t{i}'] = 'float64'
+        raw_data[f'new_price_gap_2m3_t{i}'] = raw_data['new_price_gap_2m3'].shift(i)
+        features_for_training[f'new_price_gap_2m3_t{i}'] = 'float64'
+        raw_data[f'new_price_gap_2m4_t{i}'] = raw_data['new_price_gap_2m4'].shift(i)
+        features_for_training[f'new_price_gap_2m4_t{i}'] = 'float64'
+        raw_data[f'new_price_gap_3m4_t{i}'] = raw_data['new_price_gap_3m4'].shift(i)
+        features_for_training[f'new_price_gap_3m4_t{i}'] = 'float64'
+        # raw_data[f'new_price_bb_exceed_up_t{i}'] = raw_data['new_price_bb_exceed_up'].shift(i)
+        # features_for_training[f'new_price_bb_exceed_up_t{i}'] = 'bool'
+        # raw_data[f'new_price_bb_below_low_t{i}'] = raw_data['new_price_bb_below_low'].shift(i)
+        # features_for_training[f'new_price_bb_below_low_t{i}'] = 'bool'
     # price momentum ***
     for i in LOOK_BACK_PERIOD:
         if i == 1:
@@ -342,9 +372,9 @@ def sampling(raw_data):
             sample_ids.add(i - 1)
         if i + 1 <= last_index:
             sample_ids.add(i + 1)
-    row_index = first_index - 3  # in accordance with randrange(3, 15)
+    row_index = first_index - SAMPLE_INTERVAL[0]  # in accordance with randrange(3, 15)
     while True:
-        row_index += randrange(3, 15)  # uniform distribution between 3~15
+        row_index += randrange(SAMPLE_INTERVAL[0], SAMPLE_INTERVAL[1])  # uniform distribution between 3~15
         if row_index <= last_index:
             sample_ids.add(row_index)
         else:
@@ -364,30 +394,41 @@ for label in LABELS:
     sample_data = sampling(data)
     sample_data['label'] = label  # add a new column/feature
     total_data = total_data.append(sample_data.copy())    
+total_data.replace([np.inf, -np.inf], -1.0, inplace=True)
 
 #-------------- feature selection
 # use DecisionTreeClassifier
 df_feature_sel = total_data[total_data["label"] == 'Stock_1']
 X = df_feature_sel[list(features.keys())]
-X = X.replace([np.inf, -np.inf], -1.0)   # ???How to handle inf??? # !!! to be deleted
+# X = X.replace([np.inf, -np.inf], -1.0)   # ???How to handle inf??? # !!! to be deleted
 y = df_feature_sel['TargetFeature']
 clf = DecisionTreeClassifier(class_weight='balanced')  # consider the imbalance training data
-trans = SelectFromModel(clf, threshold='0.05*mean')  #, threshold='0.1*mean'
+trans = SelectFromModel(clf)  #, threshold='0.1*mean'
 X_trans = trans.fit_transform(X, y)
 print("We started with {0} features but retained only {1} of them!".format(X.shape[1], X_trans.shape[1]))
 useful_featrues_1 = X.columns[trans.get_support()].values
+
 # use RandomForestClassifier
-feature_list = list(features.keys())
-feature_list.append('label')  # Stock_1 ... 10 is a feature.
 le = LabelEncoder()
-X = total_data.replace([np.inf, -np.inf], -1.0) # !!! to be deleted
-X["label"] = le.fit_transform(X["label"].values)
+# X = total_data.replace([np.inf, -np.inf], -1.0) # !!! to be deleted
+total_data["label_encode"] = le.fit_transform(total_data["label"].values)
+feature_list = list(features.keys())
+feature_list.append('label_encode')  # Stock_1 ... 10 is a feature.
+X = total_data[feature_list]
 y = total_data['TargetFeature']
-clf = RandomForestClassifier(n_estimators=100, random_state=0, class_weight='balanced')
-trans = SelectFromModel(clf, threshold='0.5*median') 
+clf = RandomForestClassifier(n_estimators=150, random_state=0, class_weight='balanced')
+trans = SelectFromModel(clf, threshold='median') 
 X_trans = trans.fit_transform(X, y)
 print("We started with {0} features but retained only {1} of them!".format(X.shape[1], X_trans.shape[1]))
 useful_featrues_2 = X.columns[trans.get_support()].values
+# merge the features 
+features_for_train = set(useful_featrues_1) | set(useful_featrues_2)
+features_for_train.add('label_encode')
+features_for_train = list(features_for_train)
+
+### 训练模型
+X_train, X_validate, y_train, y_validate = train_test_split(total_data[features_for_train], 
+            y, test_size=0.3, shuffle=True) 
 
 
 def zscore(x, window):
