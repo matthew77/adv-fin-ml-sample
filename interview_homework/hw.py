@@ -43,6 +43,7 @@ from sklearn.tree import DecisionTreeClassifier
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.preprocessing import LabelEncoder
 from sklearn.model_selection import train_test_split
+from sklearn.model_selection import GridSearchCV
 
 DATA_HOME = "E:\\tmp\\data\\interview"
 LABELS = ("Stock_1", "Stock_2", "Stock_3", "Stock_4", "Stock_5", "Stock_6", "Stock_7", 
@@ -429,6 +430,22 @@ features_for_train = list(features_for_train)
 ### 训练模型
 X_train, X_validate, y_train, y_validate = train_test_split(total_data[features_for_train], 
             y, test_size=0.3, shuffle=True) 
+parameters = {'max_depth':[3, 4, 5, 6, 7, 8],
+              'n_estimators':[50, 100, 256, 512],
+              'criterion':['gini', 'entropy'],
+              'random_state':[42]}
+
+def perform_grid_search(X_data, y_data):
+    rf = RandomForestClassifier(class_weight='balanced')
+    clf = GridSearchCV(rf, parameters, scoring='roc_auc', n_jobs=3)  # cv=4, 
+    clf.fit(X_data, y_data)
+    print(clf.cv_results_['mean_test_score'])
+    return clf.best_params_['n_estimators'], clf.best_params_['max_depth']
+
+n_estimator, depth = perform_grid_search(X_train, y_train)
+c_random_state = 42
+print(n_estimator, depth, c_random_state)
+
 
 
 def zscore(x, window):
