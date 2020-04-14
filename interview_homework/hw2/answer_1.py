@@ -4,8 +4,8 @@ import os
 import codecs
 
 # read tradingDate.csv
-DATA_HOME = "E:\\tmp\\data\\interview\\hw2"
-# DATA_HOME = "./.."
+# DATA_HOME = "E:\\tmp\\data\\interview\\hw2"
+DATA_HOME = "./.."
 
 date_list = list()
 fp = os.path.join(DATA_HOME, "tradingDate", "tradingDate.csv")
