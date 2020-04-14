@@ -53,10 +53,10 @@ SAMPLE_INTERVAL = [3, 15]  # 数据采样间隔
 ROLLING_WINDOW = 60    #计算滑动平均窗口长度
 
 
-origin_data = dict()
+# origin_data = dict()
  
 
-    '''
+'''
     回溯周期=15
     
     price feature 里面有关直接的价格不用。price feature包括
@@ -78,7 +78,7 @@ origin_data = dict()
     order feature:
     做成 rolling的 z值， + look back
     --------------------------
-    '''
+'''
 
     # ----------------------- clean data and create features -------------------
 def preprocess_data(label):
@@ -430,39 +430,43 @@ features_for_train = list(features_for_train)
 ### 训练模型
 X_train, X_validate, y_train, y_validate = train_test_split(total_data[features_for_train], 
             y, test_size=0.3, shuffle=True) 
-parameters = {'max_depth':[3, 4, 5, 6, 7, 8],
-              'n_estimators':[50, 100, 256, 512],
-              'criterion':['gini', 'entropy'],
-              'random_state':[42]}
+parameters = {'max_depth':[4, 5, 6, 7, 8],
+              'n_estimators':[200, 300, 512],
+              'random_state':[42]}   # 'criterion':['gini', 'entropy'],
 
 def perform_grid_search(X_data, y_data):
-    rf = RandomForestClassifier(class_weight='balanced')
-    clf = GridSearchCV(rf, parameters, scoring='roc_auc', n_jobs=3)  # cv=4, 
+    rf = RandomForestClassifier(class_weight='balanced', criterion='entropy')
+    clf = GridSearchCV(rf, parameters, cv=5, scoring='roc_auc', n_jobs=3)  
     clf.fit(X_data, y_data)
     print(clf.cv_results_['mean_test_score'])
-    return clf.best_params_['n_estimators'], clf.best_params_['max_depth']
+    # return clf.best_params_['n_estimators'], clf.best_params_['max_depth']
+    return clf
 
-n_estimator, depth = perform_grid_search(X_train, y_train)
+grid_results = perform_grid_search(X_train, y_train)
+n_estimators = grid_results.best_params_['n_estimators']
+max_depth = grid_results.best_params_['max_depth']
+# criterion = grid_results.best_params_['criterion']
+# n_estimator, depth = perform_grid_search(X_train, y_train)
 c_random_state = 42
-print(n_estimator, depth, c_random_state)
+print(n_estimators, max_depth, c_random_state)
 
 
 
-def zscore(x, window):
-    r = x.rolling(window=window)
-    m = r.mean().shift(1)
-    s = r.std(ddof=0).shift(1)
-    z = (x-m)/s
-    return z
+# def zscore(x, window):
+#     r = x.rolling(window=window)
+#     m = r.mean().shift(1)
+#     s = r.std(ddof=0).shift(1)
+#     z = (x-m)/s
+#     return z
 
 # get na summary 
-na_sum = dict()
-for label in LABELS:
-    file_path = os.path.join(DATA_HOME, f'{label}.csv')
-    raw_data = pd.read_csv(file_path, index_col=0)
-    na_sum[label] = raw_data.isna().sum()
+# na_sum = dict()
+# for label in LABELS:
+#     file_path = os.path.join(DATA_HOME, f'{label}.csv')
+#     raw_data = pd.read_csv(file_path, index_col=0)
+#     na_sum[label] = raw_data.isna().sum()
 
-na_sum_df = pd.DataFrame(na_sum)
+# na_sum_df = pd.DataFrame(na_sum)
 
 
 # some sample code 
